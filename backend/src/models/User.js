@@ -2,21 +2,14 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
-  name: { type: String, required: true, trim: true, maxlength: 100 },
-  email: {
-    type: String, required: true, unique: true, trim: true, lowercase: true, maxlength: 255,
-    match: [/^\S+@\S+\.\S+$/, 'Email is not valid'],
-  },
-  // select: false keeps the hash out of every query unless asked for with .select('+password')
-  password: { type: String, required: true, select: false },
+  name: { type: String, required: true, trim: true },
+  email: { type: String, required: true, unique: true, trim: true, lowercase: true },
+  password: { type: String, required: true, select: false }, // not returned by queries unless asked for
 }, { timestamps: true });
 
-userSchema.pre('save', async function hashPassword() {
-  if (this.isModified('password')) this.password = await bcrypt.hash(this.password, 12);
+// Hash the password before saving
+userSchema.pre('save', async function () {
+  if (this.isModified('password')) this.password = await bcrypt.hash(this.password, 10);
 });
-
-userSchema.methods.checkPassword = function checkPassword(plain) {
-  return bcrypt.compare(plain, this.password);
-};
 
 module.exports = mongoose.model('User', userSchema);

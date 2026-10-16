@@ -1,14 +1,11 @@
 const { Doctor, Mapping } = require('../models');
 const ApiError = require('../utils/ApiError');
 
-const FIELDS = ['name', 'specialization', 'email', 'phone', 'experienceYears'];
-const pick = (body) => Object.fromEntries(
-  FIELDS.filter((f) => body[f] !== undefined).map((f) => [f, body[f] === '' ? null : body[f]]),
-);
+// Only the fields a user is allowed to set
+const doctorData = ({ name, specialization, email, phone, experienceYears }) =>
+  ({ name, specialization, email, phone, experienceYears });
 
-const DUPLICATE = 'A doctor with this email already exists';
-
-// Doctors are visible to every logged-in user; only the creator may edit or delete one
+// Every user can see all doctors, but only the creator can edit or delete one
 const findEditable = async (id, userId) => {
   const doctor = await Doctor.findById(id);
   if (!doctor) throw ApiError.notFound('Doctor not found');
@@ -17,9 +14,7 @@ const findEditable = async (id, userId) => {
 };
 
 exports.create = async (req, res) => {
-  const data = pick(req.body);
-  if (data.email && await Doctor.exists({ email: String(data.email).toLowerCase() })) throw ApiError.conflict(DUPLICATE);
-  const doctor = await Doctor.create({ ...data, createdBy: req.user._id });
+  const doctor = await Doctor.create({ ...doctorData(req.body), createdBy: req.user._id });
   res.status(201).json({ success: true, message: 'Doctor created', doctor });
 };
 
@@ -36,19 +31,13 @@ exports.get = async (req, res) => {
 
 exports.update = async (req, res) => {
   const doctor = await findEditable(req.params.id, req.user._id);
-  const data = pick(req.body);
-  if (!Object.keys(data).length) throw ApiError.badRequest('No valid fields to update');
-  if (data.email && await Doctor.exists({ email: String(data.email).toLowerCase(), _id: { $ne: doctor._id } })) {
-    throw ApiError.conflict(DUPLICATE);
-  }
-  doctor.set(data);
-  await doctor.save();
-  res.json({ success: true, message: 'Doctor updated', doctor });
+  await doctor.updateOne(doctorData(req.body));
+  res.json({ success: true, message: 'Doctor updated', doctor: await Doctor.findById(doctor._id) });
 };
 
 exports.remove = async (req, res) => {
   const doctor = await findEditable(req.params.id, req.user._id);
-  await Mapping.deleteMany({ doctorId: doctor._id }); // cascade: remove this doctor's assignments
+  await Mapping.deleteMany({ doctorId: doctor._id }); // also remove this doctor's assignments
   await doctor.deleteOne();
   res.json({ success: true, message: 'Doctor deleted' });
 };

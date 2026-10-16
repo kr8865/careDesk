@@ -1,11 +1,11 @@
-const { mongoose } = require('../config/db');
+const mongoose = require('mongoose');
+
+// Adds `id` to every JSON response (the frontend uses it). Must run before the models below are created.
+mongoose.set('toJSON', { virtuals: true });
+
 const User = require('./User');
 const Patient = require('./Patient');
 const Doctor = require('./Doctor');
 const Mapping = require('./Mapping');
 
-// Relationships (MongoDB has no foreign keys, so deletes are cascaded in the controllers):
-//   User 1 -> many Patients, Doctors   (createdBy)
-//   Patient many <-> many Doctor        (through Mapping: patientId, doctorId)
-
-module.exports = { mongoose, User, Patient, Doctor, Mapping };
+module.exports = { User, Patient, Doctor, Mapping };

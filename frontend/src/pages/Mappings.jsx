@@ -81,7 +81,7 @@ export default function Mappings() {
               <tbody>
                 {mappings.map((m) => (
                   <tr key={m.id}>
-                    <td>{m.patient.name}</td><td>{m.doctor.name}</td><td>{m.doctor.specialization}</td>
+                    <td>{m.patientId.name}</td><td>{m.doctorId.name}</td><td>{m.doctorId.specialization}</td>
                     <td>{m.notes || '—'}</td><td>{new Date(m.createdAt).toLocaleDateString()}</td>
                     <td className="row-actions"><button className="ghost small" onClick={() => unassign(m.id)}>Remove</button></td>
                   </tr>
